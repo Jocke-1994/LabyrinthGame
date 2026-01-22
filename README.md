@@ -1,7 +1,9 @@
 Uppdatering/Update 1.7.0
+Feature:
 - Lagt till en tutorial som förklarar hur man spelar. / Added a tutorial which explains how to play.
 -------------------------------
 Uppdatering/Update 1.6.0
+Feature:
 - Ändrat antalet banor. / Changed the number of tracks:
   
 - Lätt är ändrad från 6 till 15 / Easy has been changed from 6 to 15.
@@ -11,6 +13,7 @@ Uppdatering/Update 1.6.0
 
 -------------------------------
 Uppdatering/Update 1.5.0
+Feature:
 - Lagt till möjligheten att trycka på skärmen för att försöka igen, utan att behöva trycka på Försök igen. / Added the possibility to try again without pressing "Try Again".
 - Lagt till ljudeffekter när man svänger, kraschar eller klarar banan. / Added sound effect for turns, crashes or completing the track.
 - Lagt till möjligheten att hoppa över att se ban-sträckningen. / Added the possiblity to skip the preview of the track.
