@@ -1,3 +1,6 @@
+Uppdatering/Update 1.7.0
+- Lagt till en tutorial som förklarar hur man spelar. / Added a tutorial which explains how to play.
+-------------------------------
 Uppdatering/Update 1.6.0
 - Ändrat antalet banor. / Changed the number of tracks:
   
