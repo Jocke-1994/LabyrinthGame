@@ -366,6 +366,11 @@
         let currentTrack = null, pState = { x: 0, y: 0, prevX: 0, prevY: 0 }, player = { vx: 0, vy: 0, segIdx: 0 };
         let cam = { x: 0, y: 0, prevX: 0, prevY: 0 }, alive = false, started = false, paused = false, attempts = 1;
         let lastTime = 0, accumulator = 0, dt = 1 / 144, currentProg = 0;
+
+        // ZOOM VARIABLER
+        let zoom = 1, targetZoom = 1, prevZoom = 1;
+        let isPreviewing = false, previewTargetIdx = 0;
+
         const canvas = document.getElementById("c"), ctx = canvas.getContext("2d");
 
         function showScreen(id) {
@@ -400,7 +405,6 @@
                 const track = tracks.find(t => t.id === id);
                 if (track) {
                     let pb = history[id].bestProg ? Math.round(history[id].bestProg) : 0;
-                    // HÄR VISAR VI NU BÄSTA FÖRSÖK (MINSTA ANTALET)
                     let attemptsText = history[id].cleared ? `${history[id].bestAttempts} försök (PB)` : `${history[id].attempts} försök`;
                     list.innerHTML += `<div class="stats-item"><span>Bana ${id} <span class="tag ${track.difficulty}">${track.difficulty.toUpperCase()}</span></span> <span>PB: ${pb}% | ${attemptsText}</span></div>`;
                 }
@@ -409,6 +413,8 @@
 
         function startTrack(t) {
             currentTrack = t; attempts = 1; paused = false; currentProg = 0;
+            isPreviewing = true; previewTargetIdx = 0; targetZoom = 0.4; // Zooma ut för preview
+
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             document.getElementById('gameHud').classList.remove('hidden');
             document.getElementById('progressBarContainer').classList.remove('hidden');
@@ -420,7 +426,12 @@
             alive = true; started = false; player.segIdx = 0; currentProg = 0;
             pState.x = pState.prevX = currentTrack.pts[0].x;
             pState.y = pState.prevY = currentTrack.pts[0].y;
-            cam.x = cam.prevX = pState.x; cam.y = cam.prevY = pState.y;
+
+            if (isPreviewing) {
+                cam.x = cam.prevX = pState.x;
+                cam.y = cam.prevY = pState.y;
+            }
+
             updateVelocity();
             document.getElementById('hudTrack').textContent = currentTrack.id;
             document.getElementById('hudAttempts').textContent = attempts;
@@ -436,8 +447,8 @@
         }
 
         function handleInput() {
-            if (!alive || paused) return;
-            if (!started) { started = true; return; }
+            if (!alive || paused || isPreviewing) return;
+            if (!started) { started = true; targetZoom = 1.0; return; }
             let next = currentTrack.pts[player.segIdx + 1];
             if (!next) return;
             let isFinalSegment = (player.segIdx + 1 >= currentTrack.pts.length - 1);
@@ -467,16 +478,11 @@
             alive = false;
             let history = JSON.parse(localStorage.getItem('maze_history_pro') || "{}");
             if (!history[currentTrack.id]) history[currentTrack.id] = { attempts: 0, bestProg: 0, cleared: false };
-
-            // Uppdaterar temporärt antal försök för statistikskärmen om man inte klarat den än
-            if (!history[currentTrack.id].cleared) {
-                history[currentTrack.id].attempts = attempts;
-            }
+            if (!history[currentTrack.id].cleared) history[currentTrack.id].attempts = attempts;
 
             let isNewPB = currentProg > (history[currentTrack.id].bestProg || 0);
             let oldPB = history[currentTrack.id].bestProg || 0;
             if (isNewPB) history[currentTrack.id].bestProg = currentProg;
-
             localStorage.setItem('maze_history_pro', JSON.stringify(history));
 
             document.getElementById('msgTitle').textContent = "KRASCH!";
@@ -491,19 +497,13 @@
         function win() {
             alive = false;
             let history = JSON.parse(localStorage.getItem('maze_history_pro') || "{}");
-
-            // Om banan aldrig spelats förut, skapa objektet
             if (!history[currentTrack.id]) {
                 history[currentTrack.id] = { attempts: attempts, bestAttempts: attempts, bestProg: 100, cleared: true };
             } else {
-                // NY LOGIK: Kolla om nuvarande försök är bättre än tidigare personbästa
-                if (!history[currentTrack.id].cleared || attempts < history[currentTrack.id].bestAttempts) {
-                    history[currentTrack.id].bestAttempts = attempts;
-                }
+                if (!history[currentTrack.id].cleared || attempts < history[currentTrack.id].bestAttempts) history[currentTrack.id].bestAttempts = attempts;
                 history[currentTrack.id].cleared = true;
                 history[currentTrack.id].bestProg = 100;
             }
-
             localStorage.setItem('maze_history_pro', JSON.stringify(history));
 
             document.getElementById('msgTitle').textContent = "KLAR!";
@@ -516,7 +516,32 @@
         }
 
         function updatePhysics() {
-            if (alive && started && !paused) {
+            if (!alive || paused) return;
+
+            prevZoom = zoom;
+            zoom += (targetZoom - zoom) * 0.05;
+
+            if (isPreviewing) {
+                let target = currentTrack.pts[previewTargetIdx];
+                let dx = target.x - cam.x;
+                let dy = target.y - cam.y;
+                let dist = Math.hypot(dx, dy);
+
+                cam.prevX = cam.x; cam.prevY = cam.y;
+                cam.x += dx * 0.08;
+                cam.y += dy * 0.08;
+
+                if (dist < 50) {
+                    previewTargetIdx++;
+                    if (previewTargetIdx >= currentTrack.pts.length) {
+                        isPreviewing = false;
+                        targetZoom = 0.8; // Zooma in lite innan start
+                    }
+                }
+                return;
+            }
+
+            if (started) {
                 pState.prevX = pState.x; pState.prevY = pState.y;
                 cam.prevX = cam.x; cam.prevY = cam.y;
                 pState.x += player.vx * currentTrack.speed * dt;
@@ -540,6 +565,10 @@
 
                 let cx = p1.x + Math.max(0, Math.min(1, t)) * dx, cy = p1.y + Math.max(0, Math.min(1, t)) * dy;
                 if (Math.hypot(pState.x - cx, pState.y - cy) > currentTrack.width) fail();
+            } else {
+                cam.prevX = cam.x; cam.prevY = cam.y;
+                cam.x += (pState.x - cam.x) * 0.1;
+                cam.y += (pState.y - cam.y) * 0.1;
             }
         }
 
@@ -560,20 +589,45 @@
                 const lerpY = pState.prevY + (pState.y - pState.prevY) * alpha;
                 const lerpCamX = cam.prevX + (cam.x - cam.prevX) * alpha;
                 const lerpCamY = cam.prevY + (cam.y - cam.prevY) * alpha;
+                const lerpZoom = prevZoom + (zoom - prevZoom) * alpha;
+
                 ctx.save();
-                ctx.translate(canvas.width / 2 - lerpCamX, canvas.height / 2 - lerpCamY);
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.scale(lerpZoom, lerpZoom);
+                ctx.translate(-lerpCamX, -lerpCamY);
+
+                // Rita bana
                 ctx.strokeStyle = currentTrack.difficulty === 'brutal' ? "#ff0044" : "#fff";
                 ctx.lineWidth = currentTrack.width * 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
                 ctx.beginPath(); ctx.moveTo(currentTrack.pts[0].x, currentTrack.pts[0].y);
                 currentTrack.pts.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+
+                // Sväng-cirklar
                 ctx.fillStyle = currentTrack.difficulty === 'brutal' ? "rgba(255,0,68,0.15)" : "rgba(29, 43, 255, 0.25)";
                 currentTrack.pts.forEach((p, idx) => {
                     if (idx > 0 && idx < currentTrack.pts.length - 1) {
                         ctx.beginPath(); ctx.arc(p.x, p.y, currentTrack.speed * currentTrack.timing, 0, Math.PI * 2); ctx.fill();
                     }
                 });
+
+                // Spelare
                 ctx.shadowBlur = 15; ctx.shadowColor = currentTrack.difficulty === 'brutal' ? "#ff0044" : "#1d2bff";
                 ctx.fillStyle = ctx.shadowColor; ctx.beginPath(); ctx.arc(lerpX, lerpY, 8.5, 0, Math.PI * 2); ctx.fill();
+
+                // TEXT OVERLAYS I VÄRLDEN
+                if (!started && !isPreviewing && alive) {
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 40px 'Segoe UI'";
+                    ctx.textAlign = "center";
+                    ctx.fillText("KLICKA FÖR ATT STARTA", lerpX, lerpY - 60);
+                }
+                if (isPreviewing) {
+                    ctx.fillStyle = currentTrack.difficulty === 'brutal' ? "#ff0044" : "#1d2bff";
+                    ctx.font = "bold 50px 'Segoe UI'";
+                    ctx.textAlign = "center";
+                    ctx.fillText("REKOGNOSCERAR BANA...", cam.x, cam.y - 120);
+                }
+
                 ctx.restore();
             }
         }
