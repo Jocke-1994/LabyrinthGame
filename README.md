@@ -1,3 +1,7 @@
+Uppdatering/Update 1.8.0
+Feature:
+- Lagt till sektionen Dynamic med 10 nya banor som svänger allt mellan 10-170 grader. / Added the section Dynamic with 10 new tracks with turns, ranging from 10-170 degrees.
+-------------------------------
 Uppdatering/Update 1.7.0
 Feature:
 - Lagt till en tutorial som förklarar hur man spelar. / Added a tutorial which explains how to play.
