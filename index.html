@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Labyrint Master: JUICED UP</title>
+    <title>Labyrint Master: JUICED UP 2.0</title>
     <style>
         :root {
             --bg: #050608;
@@ -988,6 +988,10 @@
         let gameSettings = JSON.parse(localStorage.getItem('maze_settings') || '{"skin": "#1d2bff", "fog": false, "speed": 1, "sound": true}');
         if (gameSettings.sound === undefined) gameSettings.sound = true;
 
+        // --- GLOBAL VARIABLES FOR FEATURES ---
+        let turnCombo = 0; // FEATURE 3: Dynamic Pitch
+        let ghosts = JSON.parse(localStorage.getItem('maze_ghosts') || "{}"); // FEATURE 2: Ghost
+
         const AudioSfx = {
             ctx: null,
             init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
@@ -998,9 +1002,15 @@
                 const gain = this.ctx.createGain();
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 const now = this.ctx.currentTime;
+
                 if (type === 'turn') {
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(400, now);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                    // FEATURE 3: DYNAMIC PITCH
+                    // Base 400Hz, increase 20Hz per successful turn, cap at 800Hz
+                    let baseFreq = 400;
+                    let freq = Math.min(800, baseFreq + (turnCombo * 20));
+
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now);
+                    osc.frequency.exponentialRampToValueAtTime(Math.max(100, freq - 300), now + 0.1);
                     gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
                     osc.start(); osc.stop(now + 0.1);
                 } else if (type === 'fail') {
@@ -1024,43 +1034,43 @@
                 pause: "PAUS", pausedTitle: "PAUSAD", resumeBtn: "Återuppta", exitBtn: "Avsluta till Meny",
                 back: "Tillbaka", hudTrack: "BANA", hudAttempts: "FÖRSÖK", hudDone: "KLART",
                 aboutText: `
-                                        <div class="founder-section">
-                                            <div class="founder-title">Grundarna</div>
-                                            <div class="founder-grid">
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Bozhidar Ivanov</span>
-                                                    <span class="founder-role">Lead Developer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
-                                                </div>
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Joakim Rehn</span>
-                                                    <span class="founder-role">Lead Designer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
+                                    <div class="founder-section">
+                                        <div class="founder-title">Grundarna</div>
+                                        <div class="founder-grid">
+                                            <div class="founder-card">
+                                                <span class="founder-name">Bozhidar Ivanov</span>
+                                                <span class="founder-role">Lead Developer</span>
+                                                <div class="social-row">
+                                                    <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                    <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
                                                 </div>
                                             </div>
-                                            <div class="wish-box" style="border-left-color: var(--tricky); background: rgba(0, 229, 255, 0.05);">
-                                                <span class="wish-label" style="color: var(--tricky)">NEW: TRICKY "THE SWEET SPOT"</span>
-                                                <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
-                                                    Testa de nya <b>Tricky</b>-banorna! Breda vägar men kluriga vägval. Designade för flow och aha-upplevelser. Inte för lätt, inte för svårt.
+                                            <div class="founder-card">
+                                                <span class="founder-name">Joakim Rehn</span>
+                                                <span class="founder-role">Lead Designer</span>
+                                                <div class="social-row">
+                                                    <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                    <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
                                                 </div>
-                                            </div>
-                                            <div class="wish-box">
-                                                <span class="wish-label">En önskan från oss:</span>
-                                                <div class="wish-text">"Må era reflexer vara blixtsnabba och ert tålamod oändligt."</div>
                                             </div>
                                         </div>
-                                        <div class="instr-list">
-                                            <p>Använd <b>Space</b> eller <b>Klicka</b> för att svänga vid cirklarna.</p>
-                                            <p>Tips: Klicka/Space under rekognoscering för att hoppa till start.</p>
-                                            <p>På SVÅR och BRUTAL syns inga cirklar.</p>
-                                            <p>Tryck på <b>P</b> för att pausa.</p>
-                                        </div>`,
+                                        <div class="wish-box" style="border-left-color: var(--tricky); background: rgba(0, 229, 255, 0.05);">
+                                            <span class="wish-label" style="color: var(--tricky)">NEW: TRICKY "THE SWEET SPOT"</span>
+                                            <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
+                                                Testa de nya <b>Tricky</b>-banorna! Breda vägar men kluriga vägval. Designade för flow och aha-upplevelser. Inte för lätt, inte för svårt.
+                                            </div>
+                                        </div>
+                                        <div class="wish-box">
+                                            <span class="wish-label">En önskan från oss:</span>
+                                            <div class="wish-text">"Må era reflexer vara blixtsnabba och ert tålamod oändligt."</div>
+                                        </div>
+                                    </div>
+                                    <div class="instr-list">
+                                        <p>Använd <b>Space</b> eller <b>Klicka</b> för att svänga vid cirklarna.</p>
+                                        <p>Tips: Klicka/Space under rekognoscering för att hoppa till start.</p>
+                                        <p>På SVÅR och BRUTAL syns inga cirklar.</p>
+                                        <p>Tryck på <b>P</b> för att pausa.</p>
+                                    </div>`,
                 clickStart: "SPACE / KLICK FÖR ATT STARTA", scouting: "REKOGNOSCERAR BANA...",
                 skipHint: "KLICKA FÖR ATT HOPPA ÖVER",
                 crash: "KRASCH!", tryAgain: "Försök igen.", tryAgainBtn: "FÖRSÖK IGEN (SPACE)",
@@ -1084,43 +1094,43 @@
                 pause: "PAUSE", pausedTitle: "PAUSED", resumeBtn: "Resume", exitBtn: "Exit to Menu",
                 back: "Back", hudTrack: "LEVEL", hudAttempts: "ATTEMPTS", hudDone: "DONE",
                 aboutText: `
-                                        <div class="founder-section">
-                                            <div class="founder-title">The Founders</div>
-                                            <div class="founder-grid">
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Bozhidar Ivanov</span>
-                                                    <span class="founder-role">Lead Developer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
-                                                </div>
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Joakim Rehn</span>
-                                                    <span class="founder-role">Lead Designer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
+                                    <div class="founder-section">
+                                        <div class="founder-title">The Founders</div>
+                                        <div class="founder-grid">
+                                            <div class="founder-card">
+                                                <span class="founder-name">Bozhidar Ivanov</span>
+                                                <span class="founder-role">Lead Developer</span>
+                                                <div class="social-row">
+                                                    <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                    <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
                                                 </div>
                                             </div>
-                                             <div class="wish-box" style="border-left-color: var(--tricky); background: rgba(0, 229, 255, 0.05);">
-                                                <span class="wish-label" style="color: var(--tricky)">NEW: TRICKY "THE SWEET SPOT"</span>
-                                                <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
-                                                    Try the new <b>Tricky</b> levels! Wide paths but complex decisions. Designed for flow. Not too easy, not too hard.
+                                            <div class="founder-card">
+                                                <span class="founder-name">Joakim Rehn</span>
+                                                <span class="founder-role">Lead Designer</span>
+                                                <div class="social-row">
+                                                    <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                    <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
                                                 </div>
-                                            </div>
-                                            <div class="wish-box">
-                                                <span class="wish-label">A wish from us:</span>
-                                                <div class="wish-text">"May your reflexes be lightning fast and your patience infinite."</div>
                                             </div>
                                         </div>
-                                        <div class="instr-list">
-                                            <p>Use <b>Space</b> or <b>Click</b> to turn at the circles.</p>
-                                            <p>Tip: Click/Space during scouting to skip directly to the start.</p>
-                                            <p>On HARD and BRUTAL, no circles are shown.</p>
-                                            <p>Press <b>P</b> to pause.</p>
-                                        </div>`,
+                                         <div class="wish-box" style="border-left-color: var(--tricky); background: rgba(0, 229, 255, 0.05);">
+                                            <span class="wish-label" style="color: var(--tricky)">NEW: TRICKY "THE SWEET SPOT"</span>
+                                            <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
+                                                Try the new <b>Tricky</b> levels! Wide paths but complex decisions. Designed for flow. Not too easy, not too hard.
+                                            </div>
+                                        </div>
+                                        <div class="wish-box">
+                                            <span class="wish-label">A wish from us:</span>
+                                            <div class="wish-text">"May your reflexes be lightning fast and your patience infinite."</div>
+                                        </div>
+                                    </div>
+                                    <div class="instr-list">
+                                        <p>Use <b>Space</b> or <b>Click</b> to turn at the circles.</p>
+                                        <p>Tip: Click/Space during scouting to skip directly to the start.</p>
+                                        <p>On HARD and BRUTAL, no circles are shown.</p>
+                                        <p>Press <b>P</b> to pause.</p>
+                                    </div>`,
                 clickStart: "SPACE / CLICK TO START", scouting: "SCOUTING TRACK...",
                 skipHint: "CLICK TO SKIP",
                 crash: "CRASH!", tryAgain: "Try again.", tryAgainBtn: "TRY AGAIN (SPACE)",
@@ -1455,7 +1465,6 @@
                     for (let i = 0; i < 5; i++) {
                         particles.push({
                             type: 'confetti',
-                            // Slumpmässigt från botten av skärmen
                             screenX: Math.random() * canvas.width,
                             screenY: canvas.height + 10,
                             vx: (Math.random() - 0.5) * 10, // Spridning i X
@@ -1503,14 +1512,13 @@
                 let p = particles[i];
 
                 if (p.type === 'confetti') {
-                    // Använd screenX/Y för confetti som ligger "ovanpå" spelet
                     p.screenX += p.vx;
                     p.screenY += p.vy;
                     p.rotation += p.rotSpeed;
-                    p.vy += p.gravity; // Tyngdkraft
-                    p.life -= 0.005;   // Tona ut långsamt
+                    p.vy += p.gravity;
+                    p.life -= 0.005;
 
-                    if (p.screenY > canvas.height + 50 && p.vy > 0) p.life = 0; // Döda om de ramlar ut
+                    if (p.screenY > canvas.height + 50 && p.vy > 0) p.life = 0;
                 }
                 else if (p.type === 'explosion') {
                     p.x += p.vx;
@@ -1524,7 +1532,7 @@
                     p.size += p.speed;
                     p.alpha -= 0.03;
                     if (p.alpha <= 0) p.life = 0;
-                    else p.life = 1; // Håll den vid liv tills alpha är 0
+                    else p.life = 1;
                 }
 
                 if (p.life <= 0) {
@@ -1539,7 +1547,6 @@
                 ctx.save();
 
                 if (p.type === 'confetti') {
-                    // Ritas i Screen Space (ignorerar kamera och zoom)
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.translate(p.screenX, p.screenY);
                     ctx.rotate(p.rotation * Math.PI / 180);
@@ -1548,8 +1555,6 @@
                     ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
                 }
                 else if (p.type === 'shockwave') {
-                    // Ritas i World Space (vid spelaren)
-                    // Context är redan transformerat korrekt i main draw loop
                     ctx.translate(p.x, p.y);
                     ctx.beginPath();
                     ctx.arc(0, 0, p.size, 0, Math.PI * 2);
@@ -1559,7 +1564,6 @@
                     ctx.stroke();
                 }
                 else {
-                    // Explosioner (World Space)
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.rotation * Math.PI / 180);
                     ctx.fillStyle = p.color;
@@ -1572,7 +1576,8 @@
         }
 
         // --- GAME STATE ---
-        let currentTrack = null, pState = { x: 0, y: 0, prevX: 0, prevY: 0 }, player = { vx: 0, vy: 0, segIdx: 0 };
+        // FEATURE 1: Trail state in player object
+        let currentTrack = null, pState = { x: 0, y: 0, prevX: 0, prevY: 0 }, player = { vx: 0, vy: 0, segIdx: 0, trail: [] };
         let cam = { x: 0, y: 0, prevX: 0, prevY: 0 }, alive = false, started = false, paused = false, attempts = 1;
         let lastTime = 0, accumulator = 0, dt = 1 / 144, currentProg = 0;
         let zoom = 1, targetZoom = 1, prevZoom = 1;
@@ -1694,11 +1699,13 @@
 
         function initGame() {
             alive = true; started = false; player.segIdx = 0; currentProg = 0; shake = 0;
+            turnCombo = 0; // Reset Audio Pitch combo
+            player.trail = []; // Reset Trail
+
             pState.x = pState.prevX = currentTrack.pts[0].x;
             pState.y = pState.prevY = currentTrack.pts[0].y;
-            flash.alpha = 0; // Reset flash on restart
+            flash.alpha = 0;
 
-            // Clear explosion particles but keep confetti if any
             particles = particles.filter(p => p.type === 'confetti');
 
             if (isPreviewing) {
@@ -1777,6 +1784,9 @@
             if (!isFinalSegment && d < (currentTrack.speed * speedMod) * currentTrack.timing) {
                 player.segIdx++; pState.x = next.x; pState.y = next.y;
                 updateVelocity();
+
+                // FEATURE 3: Increment Combo and Play Sound
+                turnCombo++;
                 AudioSfx.play('turn');
 
                 if (isTutorial && tutorialPhase === 5 && player.segIdx >= 3) {
@@ -1810,9 +1820,16 @@
         function fail() {
             if (!alive) return;
             alive = false;
+            turnCombo = 0; // Reset Combo
+
+            // FEATURE 2: SAVE GHOST POSITION
+            if (currentTrack && !isTutorial) {
+                ghosts[currentTrack.id] = { x: pState.x, y: pState.y };
+                localStorage.setItem('maze_ghosts', JSON.stringify(ghosts));
+            }
 
             // JUICE: Visual Feedback on Death
-            shake = 40; // Massive shake
+            shake = 40;
             spawnExplosion(pState.x, pState.y, gameSettings.skin);
             flash.active = true;
             flash.color = '#ff0000';
@@ -1854,7 +1871,6 @@
                     document.getElementById('overlayMainBtn').onclick = () => { attempts++; initGame(); };
                 }
 
-                // Delay overlay slightly to see explosion
                 setTimeout(() => document.getElementById('gameOverlay').classList.remove('hidden'), 500);
                 return;
             }
@@ -1875,29 +1891,26 @@
             document.getElementById('overlayMainBtn').textContent = t.tryAgainBtn;
             document.getElementById('overlayMainBtn').onclick = () => { attempts++; initGame(); };
 
-            // Delay overlay slightly to see explosion
             setTimeout(() => document.getElementById('gameOverlay').classList.remove('hidden'), 500);
         }
 
         function win() {
             alive = false;
+            turnCombo = 0; // Reset Combo
             AudioSfx.play('win');
 
-            // --- NYTT: Starta det maffiga firandet ---
             triggerWinCelebration(pState.x, pState.y);
 
-            // JUICE: Win Flash
             flash.active = true;
             flash.color = '#ffffff';
-            flash.alpha = 0.8; // Lite starkare blixt
+            flash.alpha = 0.8;
 
             const t = i18n[currentLang];
             const overlay = document.getElementById('gameOverlay');
             const popup = document.getElementById('popupBox');
 
-            // Återställ animationen så den spelas varje gång
             popup.classList.remove('popup-anim');
-            void popup.offsetWidth; // Trigger reflow
+            void popup.offsetWidth;
             popup.classList.add('popup-anim');
 
             if (isTutorial) {
@@ -1922,9 +1935,14 @@
             }
             localStorage.setItem('maze_history_pro', JSON.stringify(history));
 
+            // CLEAR GHOST IF LEVEL COMPLETED
+            if (ghosts[currentTrack.id]) {
+                delete ghosts[currentTrack.id];
+                localStorage.setItem('maze_ghosts', JSON.stringify(ghosts));
+            }
+
             document.getElementById('msgTitle').textContent = t.winTitle;
 
-            // Lite snyggare formatting på texten
             document.getElementById('progressInfo').innerHTML =
                 `<div style="font-size:2rem; margin-bottom:10px; text-shadow:0 0 15px var(--success)">🎉 100% ${t.hudDone}! 🎉</div>` +
                 `<small style="color:#aaa">${t.winStats.replace('{n}', attempts)}</small>`;
@@ -1934,7 +1952,6 @@
             document.getElementById('overlayMainBtn').textContent = next ? t.nextBtn : (currentLang === 'sv' ? "MENY" : "MENU");
             document.getElementById('overlayMainBtn').onclick = next ? () => startTrack(next) : exitToMenu;
 
-            // Visa overlay direkt nu eftersom vi har partiklar ovanpå
             overlay.classList.remove('hidden');
         }
 
@@ -1965,6 +1982,12 @@
             if (alive && started) {
                 pState.prevX = pState.x; pState.prevY = pState.y;
                 cam.prevX = cam.x; cam.prevY = cam.y;
+
+                // FEATURE 1: TRAIL UPDATE
+                player.trail.push({ x: pState.x, y: pState.y });
+                if (player.trail.length > 20) {
+                    player.trail.shift();
+                }
 
                 if (isTutorial && tutorialPhase === 1) {
                     let turnPt = currentTrack.pts[1];
@@ -2016,7 +2039,6 @@
         function draw(alpha) {
             ctx.fillStyle = "#050608"; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Update particles
             if (particles.length > 0) {
                 updateParticles();
             }
@@ -2065,6 +2087,45 @@
                 else if (currentTrack.difficulty === 'mindflip') ctx.shadowColor = "#ff8800";
                 else if (currentTrack.difficulty === 'tricky') ctx.shadowColor = "#00e5ff";
                 else ctx.shadowColor = "#1d2bff";
+
+                // FEATURE 2: DRAW GHOST (DEATH MARKER)
+                // Draw before player so player is on top
+                if (currentTrack && ghosts[currentTrack.id]) {
+                    const g = ghosts[currentTrack.id];
+                    ctx.save();
+                    ctx.translate(g.x, g.y);
+                    ctx.fillStyle = "#ff0000";
+                    ctx.font = "bold 40px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    // Pulsating opacity for ghost
+                    ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.3;
+                    ctx.fillText("X", 0, 0);
+                    ctx.restore();
+                }
+
+                // FEATURE 1: DRAW TRAIL
+                // Draw before player body
+                if (player.trail.length > 1 && alive) {
+                    ctx.save();
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    for (let i = 0; i < player.trail.length - 1; i++) {
+                        const pt1 = player.trail[i];
+                        const pt2 = player.trail[i + 1];
+                        ctx.beginPath();
+                        ctx.moveTo(pt1.x, pt1.y);
+                        ctx.lineTo(pt2.x, pt2.y);
+
+                        // Fade out alpha based on index
+                        const alpha = (i / player.trail.length);
+                        ctx.strokeStyle = gameSettings.skin;
+                        ctx.globalAlpha = alpha * 0.6; // Max 0.6 opacity
+                        ctx.lineWidth = 10 + (alpha * 7); // Trail gets slightly thicker towards player
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
 
                 // Draw Player ONLY if alive
                 if (alive) {
