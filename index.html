@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Labyrint Master: MINDFLIP UPDATE</title>
     <style>
         :root {
@@ -10,7 +10,7 @@
             --primary: #1d2bff;
             --brutal: #ff0044;
             --dynamic: #d946ef;
-            --mindflip: #ff8800; /* Ny färg för Mindflip */
+            --mindflip: #ff8800;
             --text: #cfd7ff;
             --panel: #12141d;
             --success: #00c853;
@@ -18,12 +18,16 @@
 
         html, body {
             margin: 0;
-            height: 100%;
+            /* UPPDATERAD: 100dvh för att fixa hoppande adressfält på mobil */
+            height: 100dvh;
             background: var(--bg);
             overflow: hidden;
             font-family: 'Segoe UI', sans-serif;
             user-select: none;
             -webkit-user-select: none;
+            /* UPPDATERAD: Förhindrar webbläsarens inbyggda touch-gester */
+            touch-action: none;
+            overscroll-behavior: none;
         }
 
         canvas {
@@ -45,6 +49,8 @@
             z-index: 10;
             padding: 40px 20px;
             overflow-y: auto;
+            /* UPPDATERAD: Smidigare scroll på iOS */
+            -webkit-overflow-scrolling: touch;
         }
 
         .hidden {
@@ -269,6 +275,11 @@
             .btn:hover {
                 transform: translateY(-3px);
                 box-shadow: 0 10px 20px rgba(29, 43, 255, 0.3);
+            }
+
+            .btn:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 0px #151eb3;
             }
 
         .btn-secondary {
@@ -713,6 +724,86 @@
             color: var(--primary);
             text-shadow: 0 0 10px rgba(29, 43, 255, 0.5);
         }
+
+        /* --- MOBILOPTIMERINGAR (NYTT) --- */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+            }
+
+            h2 {
+                font-size: 1rem;
+                margin-top: 20px;
+            }
+
+            .btn {
+                padding: 18px 24px;
+                min-width: 100%;
+                font-size: 1.1rem;
+                margin: 6px 0;
+            }
+
+            .top-btn {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+            }
+
+            .hud {
+                top: 15px;
+                left: 15px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .pill {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .menu-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 10px;
+            }
+
+            .level-card {
+                padding: 15px;
+            }
+
+            .popup {
+                min-width: auto;
+                width: 90%;
+                padding: 25px;
+            }
+
+                .popup h2 {
+                    font-size: 2rem;
+                }
+
+            /* Döljer tangentbords-hjälp på mobil */
+            .key-cap {
+                display: none;
+            }
+
+            .lang-switcher {
+                top: 15px;
+                right: 15px;
+            }
+
+            /* Flytta kontroller till botten för enklare tum-navigering */
+            #skipTutBtn {
+                top: auto;
+                bottom: 20px;
+                left: 20px;
+                right: auto;
+            }
+
+            #pauseBtn {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -883,43 +974,43 @@
                 pause: "PAUS", pausedTitle: "PAUSAD", resumeBtn: "Återuppta", exitBtn: "Avsluta till Meny",
                 back: "Tillbaka", hudTrack: "BANA", hudAttempts: "FÖRSÖK", hudDone: "KLART",
                 aboutText: `
-                                        <div class="founder-section">
-                                            <div class="founder-title">Grundarna</div>
-                                            <div class="founder-grid">
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Bozhidar Ivanov</span>
-                                                    <span class="founder-role">Lead Developer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
-                                                </div>
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Joakim Rehn</span>
-                                                    <span class="founder-role">Lead Designer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="wish-box" style="border-left-color: var(--mindflip); background: rgba(255, 136, 0, 0.05);">
-                                                <span class="wish-label" style="color: var(--mindflip)">NEW: MINDFLIP MODE</span>
-                                                <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
-                                                   Testa de nya <b>Mindflip</b>-banorna! De byter riktning, går i loopar och är designade för att förvirra.
-                                                </div>
-                                            </div>
-                                            <div class="wish-box">
-                                                <span class="wish-label">En önskan från oss:</span>
-                                                <div class="wish-text">"Må era reflexer vara blixtsnabba och ert tålamod oändligt."</div>
-                                            </div>
-                                        </div>
-                                        <div class="instr-list">
-                                            <p>Använd <b>Space</b> eller <b>Klicka</b> för att svänga vid cirklarna.</p>
-                                            <p>Tips: Klicka/Space under rekognoscering för att hoppa till start.</p>
-                                            <p>På SVÅR och BRUTAL syns inga cirklar.</p>
-                                            <p>Tryck på <b>P</b> för att pausa.</p>
-                                        </div>`,
+                                                            <div class="founder-section">
+                                                                <div class="founder-title">Grundarna</div>
+                                                                <div class="founder-grid">
+                                                                    <div class="founder-card">
+                                                                        <span class="founder-name">Bozhidar Ivanov</span>
+                                                                        <span class="founder-role">Lead Developer</span>
+                                                                        <div class="social-row">
+                                                                            <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                                            <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="founder-card">
+                                                                        <span class="founder-name">Joakim Rehn</span>
+                                                                        <span class="founder-role">Lead Designer</span>
+                                                                        <div class="social-row">
+                                                                            <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                                            <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="wish-box" style="border-left-color: var(--mindflip); background: rgba(255, 136, 0, 0.05);">
+                                                                    <span class="wish-label" style="color: var(--mindflip)">NEW: MINDFLIP MODE</span>
+                                                                    <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
+                                                                        Testa de nya <b>Mindflip</b>-banorna! De byter riktning, går i loopar och är designade för att förvirra.
+                                                                    </div>
+                                                                </div>
+                                                                <div class="wish-box">
+                                                                    <span class="wish-label">En önskan från oss:</span>
+                                                                    <div class="wish-text">"Må era reflexer vara blixtsnabba och ert tålamod oändligt."</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="instr-list">
+                                                                <p>Använd <b>Space</b> eller <b>Klicka</b> för att svänga vid cirklarna.</p>
+                                                                <p>Tips: Klicka/Space under rekognoscering för att hoppa till start.</p>
+                                                                <p>På SVÅR och BRUTAL syns inga cirklar.</p>
+                                                                <p>Tryck på <b>P</b> för att pausa.</p>
+                                                            </div>`,
                 clickStart: "SPACE / KLICK FÖR ATT STARTA", scouting: "REKOGNOSCERAR BANA...",
                 skipHint: "KLICKA FÖR ATT HOPPA ÖVER",
                 crash: "KRASCH!", tryAgain: "Försök igen.", tryAgainBtn: "FÖRSÖK IGEN (SPACE)",
@@ -943,43 +1034,43 @@
                 pause: "PAUSE", pausedTitle: "PAUSED", resumeBtn: "Resume", exitBtn: "Exit to Menu",
                 back: "Back", hudTrack: "LEVEL", hudAttempts: "ATTEMPTS", hudDone: "DONE",
                 aboutText: `
-                                        <div class="founder-section">
-                                            <div class="founder-title">The Founders</div>
-                                            <div class="founder-grid">
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Bozhidar Ivanov</span>
-                                                    <span class="founder-role">Lead Developer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
-                                                </div>
-                                                <div class="founder-card">
-                                                    <span class="founder-name">Joakim Rehn</span>
-                                                    <span class="founder-role">Lead Designer</span>
-                                                    <div class="social-row">
-                                                        <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
-                                                        <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                             <div class="wish-box" style="border-left-color: var(--mindflip); background: rgba(255, 136, 0, 0.05);">
-                                                <span class="wish-label" style="color: var(--mindflip)">NEW: MINDFLIP MODE</span>
-                                                <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
-                                                   Try the new <b>Mindflip</b> levels! They reverse direction, loop around, and are designed to disorient.
-                                                </div>
-                                            </div>
-                                            <div class="wish-box">
-                                                <span class="wish-label">A wish from us:</span>
-                                                <div class="wish-text">"May your reflexes be lightning fast and your patience infinite."</div>
-                                            </div>
-                                        </div>
-                                        <div class="instr-list">
-                                            <p>Use <b>Space</b> or <b>Click</b> to turn at the circles.</p>
-                                            <p>Tip: Click/Space during scouting to skip directly to the start.</p>
-                                            <p>On HARD and BRUTAL, no circles are shown.</p>
-                                            <p>Press <b>P</b> to pause.</p>
-                                        </div>`,
+                                                            <div class="founder-section">
+                                                                <div class="founder-title">The Founders</div>
+                                                                <div class="founder-grid">
+                                                                    <div class="founder-card">
+                                                                        <span class="founder-name">Bozhidar Ivanov</span>
+                                                                        <span class="founder-role">Lead Developer</span>
+                                                                        <div class="social-row">
+                                                                            <a href="https://github.com/b1-loop" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                                            <a href="https://www.linkedin.com/in/bozhidar-ivanov-48158637b/" target="_blank" class="social-btn li">${iconLinkedin}</a>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="founder-card">
+                                                                        <span class="founder-name">Joakim Rehn</span>
+                                                                        <span class="founder-role">Lead Designer</span>
+                                                                        <div class="social-row">
+                                                                            <a href="https://github.com/Jocke-1994" target="_blank" class="social-btn gh">${iconGithub}</a>
+                                                                            <a href="https://www.linkedin.com/in/joakimr94/" target="_blank" class="social-btn li">${iconLinkedin}</a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                 <div class="wish-box" style="border-left-color: var(--mindflip); background: rgba(255, 136, 0, 0.05);">
+                                                                    <span class="wish-label" style="color: var(--mindflip)">NEW: MINDFLIP MODE</span>
+                                                                    <div class="wish-text" style="font-style: normal; font-size: 0.9rem;">
+                                                                        Try the new <b>Mindflip</b> levels! They reverse direction, loop around, and are designed to disorient.
+                                                                    </div>
+                                                                </div>
+                                                                <div class="wish-box">
+                                                                    <span class="wish-label">A wish from us:</span>
+                                                                    <div class="wish-text">"May your reflexes be lightning fast and your patience infinite."</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="instr-list">
+                                                                <p>Use <b>Space</b> or <b>Click</b> to turn at the circles.</p>
+                                                                <p>Tip: Click/Space during scouting to skip directly to the start.</p>
+                                                                <p>On HARD and BRUTAL, no circles are shown.</p>
+                                                                <p>Press <b>P</b> to pause.</p>
+                                                            </div>`,
                 clickStart: "SPACE / CLICK TO START", scouting: "SCOUTING TRACK...",
                 skipHint: "CLICK TO SKIP",
                 crash: "CRASH!", tryAgain: "Try again.", tryAgainBtn: "TRY AGAIN (SPACE)",
@@ -1743,6 +1834,13 @@
             if (e.code === "KeyP") togglePause();
         });
         canvas.addEventListener("pointerdown", e => { e.preventDefault(); AudioSfx.init(); handleInput(); });
+
+        // UPPDATERAD: Förhindra högerklicksmeny/långtryck på canvasen på mobil
+        canvas.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            return false;
+        });
+
         window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
         window.onresize();
         updateTexts();
